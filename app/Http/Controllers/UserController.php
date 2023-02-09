@@ -8,5 +8,7 @@ class UserController extends Controller
 {
     public function signIn(Request $request)
     {
+
+        dd($request);
     }
 }
