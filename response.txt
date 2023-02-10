@@ -1,0 +1,7 @@
+ /* 
+        401 Unauthorized
+        402 Payment Required
+        404 Not found
+        405 method not allowed
+        406 Not Acceptable
+        */
