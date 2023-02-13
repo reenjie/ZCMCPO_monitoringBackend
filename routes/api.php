@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Route;
 Route::namespace('App\Http\Controllers')->group(function () {
     Route::post('login', 'UserController@signIn');   //Login
     Route::post('User', 'UserController@fetchuser'); //FetchUser Data
-
-
+    Route::post('Roles', 'RoleController@index');
+    Route::post('User/New', 'UserController@store');
+    Route::post('User/data', 'UserController@index');
 });

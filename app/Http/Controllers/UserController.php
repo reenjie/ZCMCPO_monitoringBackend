@@ -8,9 +8,17 @@ use App\Models\User;
 use App\Models\Accesstoken;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
+    public function index(Request $request)
+    {
+        //dataid, name, username, email, role, created
+        echo 'aw';
+    }
+
+
     public function signIn(Request $request)
     {
         $credentials = array(
@@ -43,7 +51,7 @@ class UserController extends Controller
                 [
                     'message' => 'Login Success',
                     'token'   =>  $accesstoken,
-                    'status'  => '200'
+                    'role'    => Auth::user()->roleID,
                 ],
                 200
             );
@@ -51,7 +59,6 @@ class UserController extends Controller
             return response()->json(
                 [
                     'message' => 'Invalid Credentials',
-                    'status'  => '401'
                 ],
                 401
             );
@@ -63,7 +70,7 @@ class UserController extends Controller
         $token = $request->token;
         $datetime = date('Y-m-d H:i:s');
         //check first if user is authenticated
-        $user = DB::select('SELECT * FROM `users` where id in 
+        $user = DB::select('SELECT u.*, r.roles FROM `users` u INNER JOIN roles r WHERE u.id in 
         ( select userID from accesstokens where token ="' . $token . '" )');
 
         if (count($user) >= 1) {
@@ -83,7 +90,6 @@ class UserController extends Controller
                     return response()->json(
                         [
                             'data' => $user,
-                            'status'  => '200'
                         ],
                         200
                     );
@@ -93,9 +99,29 @@ class UserController extends Controller
             return response()->json(
                 [
                     'message' => 'Unauthenticated',
-                    'status'  => '401'
                 ],
                 401
+            );
+        }
+    }
+
+    public function store(Request $request)
+    {
+
+        $save =  User::create([
+            'name' => $request->name,
+            'username' => $request->username,
+            'roleID' => $request->srole,
+            'email' => $request->email,
+            'password' => Hash::make($request->pass),
+        ]);
+
+        if ($save) {
+            return response()->json(
+                [
+                    'message' => 'success',
+                ],
+                200
             );
         }
     }
