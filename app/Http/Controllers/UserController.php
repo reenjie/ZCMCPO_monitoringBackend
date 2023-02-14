@@ -14,53 +14,77 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        //dataid, name, username, email, role, created
-        echo 'aw';
+        try {
+            $data = DB::select('SELECT u.id as dataid, u.name , u.username , u.email , r.roles,  DATE_FORMAT(u.created_at, "%d/%m/%y %r") as created_at FROM users u INNER join roles r on r.id = u.roleID');
+
+            return response()->json(
+                [
+                    'data' => $data,
+                ],
+                200
+            );
+        } catch (\Throwable $th) {
+            return response()->json(
+                [
+                    'message' => $th,
+                ],
+                500
+            );
+        }
     }
 
 
     public function signIn(Request $request)
     {
-        $credentials = array(
-            'username' => $request->username,
-            'password' => $request->password
-        );
-
-        if (Auth::attempt($credentials)) {
-            $accesstoken = hash('sha256', $plainTextToken = Str::random(40));
-            $expires = date('Y-m-d H:i:s', strtotime('+60 minutes'));
-
-            $validate = Accesstoken::where('userID', Auth::user()->id);
-            if (count($validate->get()) >= 1) {
-                $validate->update([
-                    'token' => $accesstoken,
-                    'expires_at' => $expires,
-                ]);
-            } else {
-                $validate->create([
-                    'roleID'     => Auth::user()->roleID,
-                    'userID'     => Auth::user()->id,
-                    'token'      => $accesstoken,
-                    'username'   => $request->username,
-                    'expires_at' => $expires,
-                ]);
-            }
-
-
-            return response()->json(
-                [
-                    'message' => 'Login Success',
-                    'token'   =>  $accesstoken,
-                    'role'    => Auth::user()->roleID,
-                ],
-                200
+        try {
+            $credentials = array(
+                'username' => $request->username,
+                'password' => $request->password
             );
-        } else {
+
+            if (Auth::attempt($credentials)) {
+                $accesstoken = hash('sha256', $plainTextToken = Str::random(40));
+                $expires = date('Y-m-d H:i:s', strtotime('+60 minutes'));
+
+                $validate = Accesstoken::where('userID', Auth::user()->id);
+                if (count($validate->get()) >= 1) {
+                    $validate->update([
+                        'token' => $accesstoken,
+                        'expires_at' => $expires,
+                    ]);
+                } else {
+                    $validate->create([
+                        'roleID'     => Auth::user()->roleID,
+                        'userID'     => Auth::user()->id,
+                        'token'      => $accesstoken,
+                        'username'   => $request->username,
+                        'expires_at' => $expires,
+                    ]);
+                }
+
+
+                return response()->json(
+                    [
+                        'message' => 'Login Success',
+                        'token'   =>  $accesstoken,
+                        'role'    => Auth::user()->roleID,
+                    ],
+                    200
+                );
+            } else {
+                return response()->json(
+                    [
+                        'message' => 'Invalid Credentials',
+                    ],
+                    401
+                );
+            }
+        } catch (\Throwable $th) {
             return response()->json(
                 [
-                    'message' => 'Invalid Credentials',
+                    'message' => 'Could not connect to Server, Please Try again later',
                 ],
-                401
+                500
             );
         }
     }
@@ -107,21 +131,88 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
+        try {
+            $save =  User::create([
+                'name' => $request->name,
+                'username' => $request->username,
+                'roleID' => $request->srole,
+                'email' => $request->email,
+                'password' => Hash::make($request->pass),
+            ]);
 
-        $save =  User::create([
-            'name' => $request->name,
-            'username' => $request->username,
-            'roleID' => $request->srole,
-            'email' => $request->email,
-            'password' => Hash::make($request->pass),
-        ]);
-
-        if ($save) {
+            if ($save) {
+                return response()->json(
+                    [
+                        'message' => 'success',
+                    ],
+                    200
+                );
+            }
+        } catch (\Throwable $th) {
             return response()->json(
                 [
-                    'message' => 'success',
+                    'message' => 'Invalid',
+                    'error'  => $th,
+                ],
+                401
+            );
+        }
+    }
+
+    public function update(Request $request)
+    {
+        try {
+            $id      = $request->id;
+            $name    = $request->name;
+            $username = $request->username;
+            $pass    = $request->pass;
+
+            if ($pass == null) {
+                User::findorFail($id)->update([
+                    'name' => $name,
+                    'username' => $username,
+                ]);
+            } else {
+                User::findorFail($id)->update([
+                    'name' => $name,
+                    'username' => $username,
+                    'password' =>  Hash::make($pass)
+                ]);
+            }
+            return response()->json(
+                [
+                    'message' => 'Updated Successfully!',
                 ],
                 200
+            );
+        } catch (\Throwable $th) {
+            return response()->json(
+                [
+                    'message' => $th,
+                ],
+                500
+            );
+        }
+    }
+
+    public function destroy(Request $request)
+    {
+        try {
+            $id = $request->id;
+            User::findorFail($id)->delete();
+
+            return response()->json(
+                [
+                    'message' => 'Deleted Successfully!',
+                ],
+                200
+            );
+        } catch (\Throwable $th) {
+            return response()->json(
+                [
+                    'message' => $th,
+                ],
+                500
             );
         }
     }

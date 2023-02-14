@@ -25,4 +25,6 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::post('Roles', 'RoleController@index');
     Route::post('User/New', 'UserController@store');
     Route::post('User/data', 'UserController@index');
+    Route::post('User/delete', 'UserController@destroy');
+    Route::post('User/update', 'UserController@update');
 });
