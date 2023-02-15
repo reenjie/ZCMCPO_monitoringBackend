@@ -44,7 +44,8 @@ class UserController extends Controller
 
             if (Auth::attempt($credentials)) {
                 $accesstoken = hash('sha256', $plainTextToken = Str::random(40));
-                $expires = date('Y-m-d H:i:s', strtotime('+60 minutes'));
+                //Session Timer
+                $expires = date('Y-m-d H:i:s', strtotime('+2 hours'));
 
                 $validate = Accesstoken::where('userID', Auth::user()->id);
                 if (count($validate->get()) >= 1) {
@@ -213,6 +214,76 @@ class UserController extends Controller
                     'message' => $th,
                 ],
                 500
+            );
+        }
+    }
+
+    public function changepass(Request $request)
+    {
+
+        $id = $request->id;
+        $oldpass = $request->oldpass;
+        $newpass = $request->newpass;
+        $repass  = $request->repass;
+        $username = $request->username;
+
+
+        $credentials = array(
+            'username' => $username,
+            'password' => $oldpass
+        );
+
+
+        if (Auth::attempt($credentials)) {
+            if ($newpass == $repass) {
+
+                User::findorFail($id)->update([
+                    'password' => Hash::make($newpass)
+                ]);
+
+                return response()->json(
+                    [
+                        'response' => 'match',
+                        'message' => 'Password Changed Successfully!',
+                    ],
+                    200
+                );
+            } else {
+                return response()->json(
+                    [
+                        'response' => 'unmatch',
+                        'message' => 'Password Does not Match',
+                    ],
+                    200
+                );
+            }
+        } else {
+            return response()->json(
+                [
+                    'response' => 'notmatchtodefault',
+                    'message' => 'Password Does not Match',
+                ],
+                200
+            );
+        }
+    }
+
+    public function changename(Request $request)
+    {
+        $id = $request->id;
+        $name = $request->name;
+
+        $save = User::findorFail($id)->update([
+            'name' => $name
+        ]);
+
+        if ($save) {
+            return response()->json(
+                [
+
+                    'message' => 'Name Changed Successfully',
+                ],
+                200
             );
         }
     }
