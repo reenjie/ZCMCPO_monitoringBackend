@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::namespace('App\Http\Controllers')->group(function () {
+
     Route::post('login', 'UserController@signIn');   //Login
     Route::post('User', 'UserController@fetchuser'); //FetchUser Data
     Route::post('Roles', 'RoleController@index');
@@ -29,4 +30,5 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::post('User/update', 'UserController@update');
     Route::post('User/changepass', 'UserController@changepass');
     Route::post('User/changename', 'UserController@changename');
+    Route::post('FetchPurchaseOrder', 'PurchaseOrderRequest@index');
 });
