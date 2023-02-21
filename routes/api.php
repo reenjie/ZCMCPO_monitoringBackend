@@ -30,5 +30,5 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::post('User/update', 'UserController@update');
     Route::post('User/changepass', 'UserController@changepass');
     Route::post('User/changename', 'UserController@changename');
-    Route::get('FetchPurchaseOrder', 'PurchaseOrderRequest@index');
+    Route::post('FetchPurchaseOrder', 'PurchaseOrderRequest@index');
 });

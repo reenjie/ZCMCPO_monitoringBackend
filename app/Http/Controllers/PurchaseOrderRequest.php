@@ -43,20 +43,16 @@ FROM    dbo.iwPOinv AS a INNER JOIN
         dbo.mscProcurementList AS z ON b.FK_mscProcurementList = z.PK_mscProcurementList 
         LEFT JOIN mscPHICCategory cat on c.FK_mscPHICCategory = cat.PK_mscPHICCategory  order by a.docno asc");
 
-
-
-        $curr = PO::all();
-
+        $curr = PO::orderBy('created_at', 'desc')->get();
 
         if (count($curr) >= 1) {
             if (count($data) == count($curr)) {
-                // return response()->json(
-                //     [
-                //         'data' => $curr,
-                //     ],
-                //     200
-                // );
-                echo 'Already Up to date';
+                return response()->json(
+                    [
+                        'data' => $curr,
+                    ],
+                    200
+                );
             } else {
                 // UPDATE DATA IF DETECTED
                 $datenow = date('Y-m-d');
@@ -140,20 +136,20 @@ FROM    dbo.iwPOinv AS a INNER JOIN
                             'newtag' => 1
                         ]);
                         if ($update) {
-                            // return response()->json(
-                            //     [
-                            //         'data' => $curr,
-                            //     ],
-                            //     200
-                            // );
+                            return response()->json(
+                                [
+                                    'data' => $curr,
+                                ],
+                                200
+                            );
                         }
                     } else {
-                        // return response()->json(
-                        //     [
-                        //         'data' => $curr,
-                        //     ],
-                        //     200
-                        // );
+                        return response()->json(
+                            [
+                                'data' => $curr,
+                            ],
+                            200
+                        );
                     }
                 }
             }
