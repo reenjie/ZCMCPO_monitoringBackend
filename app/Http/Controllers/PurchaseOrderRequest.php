@@ -13,11 +13,6 @@ use App\Models\PO;
 class PurchaseOrderRequest extends Controller
 {
 
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
     public function index()
     {
 
@@ -202,69 +197,61 @@ FROM    dbo.iwPOinv AS a INNER JOIN
         }
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
-    }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
+    public function fetchsort(Request $request)
     {
-        //
-    }
+        $data = $request->data;
+        $supplier = '';
+        $category = '';
+        $unit     = '';
+        $result   = [];
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
-    }
+        foreach ($data as $key => $value) {
+            switch ($value['labelled']) {
+                case 'Supplier':
+                    $supplier = $value['value'];
+                    break;
+                case 'Category':
+                    $category = $value['value'];
+                    break;
+                case 'Units':
+                    $unit      = $value['value'];
+                    break;
+            }
+        }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
+        if ($supplier != '' && $category != '' && $unit != '') {
+            $result = PO::where('category', $category)
+                ->where('supplier', $supplier)
+                ->where('unit', $unit)->get();
+        } else if ($supplier == '' && $category != '' && $unit != '') {
+            $result = PO::where('category', $category)
+                ->where('unit', $unit)->get();
+        } else if ($supplier != '' && $category == '' && $unit != '') {
+            $result = PO::where('supplier', $supplier)
+                ->where('unit', $unit)->get();
+        } else if ($supplier != '' && $category != '' && $unit == '') {
+            $result = PO::where('category', $category)
+                ->where('supplier', $supplier)
+                ->get();
+        } else if ($supplier != '' && $category == '' && $unit == '') {
+            $result = PO::where('supplier', $supplier)
+                ->get();
+        } else if ($supplier == '' && $category != '' && $unit == '') {
+            $result = PO::where('category', $category)
+                ->get();
+        } else if ($supplier == '' && $category == '' && $unit != '') {
+            $result = PO::where('unit', $unit)->get();
+        }
+        // echo $supplier . $category . $unit;
+        //$result = PO::where('supplier',)
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
+        return response()->json(
+            [
+                'data' => $result,
+            ],
+            200
+        );
     }
 }
