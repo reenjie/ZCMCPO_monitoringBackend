@@ -2,13 +2,12 @@
 
 namespace App\Http\Controllers;
 
-ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
+
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\PO;
+use App\Models\Transaction;
 
 class PurchaseOrderRequest extends Controller
 {
@@ -51,6 +50,7 @@ FROM    dbo.iwPOinv AS a INNER JOIN
             } else {
                 // UPDATE DATA IF DETECTED
                 $datenow = date('Y-m-d');
+
                 $batch = DB::select('SELECT max(batch) as batch FROM `p_o_s` ');
                 $checkbatch = DB::select('SELECT max(batch) as batch FROM `p_o_s` where DATE(created_at) = "' . $datenow . '" ');
                 if ($checkbatch[0]->batch == NULL) {
@@ -58,6 +58,9 @@ FROM    dbo.iwPOinv AS a INNER JOIN
                 } else {
                     $newBatch = $batch[0]->batch;
                 }
+
+                $allnew = [];
+                $count  = 0;
                 foreach ($data as $value) {
                     /* CHECKING NEW DATA */
                     $validate = PO::where('Amount', $value->Amount)
@@ -92,60 +95,61 @@ FROM    dbo.iwPOinv AS a INNER JOIN
                         ->where('unit', $value->unit)
                         ->where('vatamt', $value->vatamt)
                         ->where('vatincl', $value->vatincl)->get();
+
+
                     if (count($validate) == 0) {
                         /* UPDATE TO LATEST */
-                        $update = PO::create([
-                            'Amount' => $value->Amount,
-                            'FK_mscProcurementList' => $value->FK_mscProcurementList,
-                            'ItemId' => $value->ItemId,
-                            'PK_TRXNO' => $value->PK_TRXNO,
-                            'PK_mscProcurementList' => $value->PK_mscProcurementList,
-                            'PODate' => $value->PODate,
-                            'PONo' => $value->PONo,
-                            'ReqNo' => $value->ReqNo,
-                            'Terms' => $value->Terms,
-                            'category' => $value->category,
-                            'conversion' => $value->conversion,
-                            'description' => $value->description,
-                            'fullname' => $value->fullname,
-                            'itbno' => $value->itbno,
-                            'itemSpec' => $value->itemSpec,
-                            'itemdesc' => $value->itemdesc,
-                            'mobilephone' => $value->mobilephone,
-                            'praddress' => $value->praddress,
-                            'prcontactperson' => $value->prcontactperson,
-                            'prfaxno' => $value->prfaxno,
-                            'price' => $value->price,
-                            'prtelno' => $value->prtelno,
-                            'qty' => $value->qty,
-                            'remarks' => $value->remarks,
-                            'seriesNo' => $value->seriesNo,
-                            'supplier' => $value->supplier,
-                            'telefax' => $value->telefax,
-                            'tinno' => $value->tinno,
-                            'totAmount' => $value->totAmount,
-                            'unit' => $value->unit,
-                            'vatamt' => $value->vatamt,
-                            'vatincl' => $value->vatincl,
-                            'batch' => $newBatch,
-                            'newtag' => 1
-                        ]);
-                        if ($update) {
-                            return response()->json(
-                                [
-                                    'data' => $curr,
-                                ],
-                                200
-                            );
-                        }
-                    } else {
-                        return response()->json(
-                            [
-                                'data' => $curr,
-                            ],
-                            200
-                        );
+                        array_push($allnew, $value);
                     }
+                }
+                foreach ($allnew as $value) {
+                    $count++;
+                    PO::create([
+                        'Amount' => $value->Amount,
+                        'FK_mscProcurementList' => $value->FK_mscProcurementList,
+                        'ItemId' => $value->ItemId,
+                        'PK_TRXNO' => $value->PK_TRXNO,
+                        'PK_mscProcurementList' => $value->PK_mscProcurementList,
+                        'PODate' => $value->PODate,
+                        'PONo' => $value->PONo,
+                        'ReqNo' => $value->ReqNo,
+                        'Terms' => $value->Terms,
+                        'category' => $value->category,
+                        'conversion' => $value->conversion,
+                        'description' => $value->description,
+                        'fullname' => $value->fullname,
+                        'itbno' => $value->itbno,
+                        'itemSpec' => $value->itemSpec,
+                        'itemdesc' => $value->itemdesc,
+                        'mobilephone' => $value->mobilephone,
+                        'praddress' => $value->praddress,
+                        'prcontactperson' => $value->prcontactperson,
+                        'prfaxno' => $value->prfaxno,
+                        'price' => $value->price,
+                        'prtelno' => $value->prtelno,
+                        'qty' => $value->qty,
+                        'remarks' => $value->remarks,
+                        'seriesNo' => $value->seriesNo,
+                        'supplier' => $value->supplier,
+                        'telefax' => $value->telefax,
+                        'tinno' => $value->tinno,
+                        'totAmount' => $value->totAmount,
+                        'unit' => $value->unit,
+                        'vatamt' => $value->vatamt,
+                        'vatincl' => $value->vatincl,
+                        'batch' => $newBatch,
+                        'newtag' => 1
+                    ]);
+                }
+
+                if (count($allnew) == $count) {
+                    return response()->json(
+                        [
+                            'data' => $curr,
+                            'refresh' => 1
+                        ],
+                        200
+                    );
                 }
             }
         } else {
@@ -253,5 +257,41 @@ FROM    dbo.iwPOinv AS a INNER JOIN
             ],
             200
         );
+    }
+
+    public function setviewed(Request $request)
+    {
+        $selection = $request->selection;
+
+        foreach ($selection as $row) {
+            $id = $row['id'];
+            PO::where('PK_posID', $id)->update([
+                'newtag' => 0
+            ]);
+
+
+            $check = Transaction::where('FK_PoID', $id);
+            $datetime = date('Y-m-d H:i:s');
+
+            if (count($check->get()) == 0) {
+                Transaction::create([
+                    'FK_PoID' => $id,
+                    'extendedCount' => 0,
+                    'duration_date' => null,
+                    'emailed_date' => null,
+                    'received_date' => null,
+                    'delivered_date' => null,
+                    'completed_date' => null,
+                    'DueDate' => null,
+                    'DueDate1' => null,
+                    'status' => 0,
+                    'remarks' => null
+                ]);
+            } else {
+                $check->update([
+                    'updated_at' => $datetime
+                ]);
+            }
+        }
     }
 }
