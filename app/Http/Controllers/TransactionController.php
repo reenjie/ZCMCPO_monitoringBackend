@@ -18,4 +18,15 @@ class TransactionController extends Controller
             200
         );
     }
+
+    public function FetchPOstatus(Request $request)
+    {
+        $data = Transaction::all();
+        return response()->json(
+            [
+                'data' => $data,
+            ],
+            200
+        );
+    }
 }

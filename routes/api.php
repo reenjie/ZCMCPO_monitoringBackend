@@ -33,4 +33,5 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::post('FetchAdvanceSortSCU', 'PurchaseOrderRequest@fetchsort');
     Route::post('SetNewtoViewed', 'PurchaseOrderRequest@setviewed');
     Route::post('FetchRecent', 'TransactionController@FetchRecent');
+    Route::post('FetchPOstatus', 'TransactionController@FetchPOstatus');
 });
