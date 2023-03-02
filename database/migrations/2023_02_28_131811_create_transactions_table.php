@@ -25,7 +25,7 @@ return new class extends Migration
             $table->date('cancelled_date')->nullable();
             $table->date('DueDate')->nullable();
             $table->date('DueDate1')->nullable();
-            $table->integer('status')->comment('1 = undelivered , 2= delivered , 3=cancelled');
+            $table->integer('status')->comment('1 = undelivered , 2= delivered , 3=cancelled , 4=completed');
             $table->text('remarks')->nullable();
             $table->timestamps();
         });

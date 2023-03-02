@@ -38,12 +38,14 @@ FROM    dbo.iwPOinv AS a INNER JOIN
         LEFT JOIN mscPHICCategory cat on c.FK_mscPHICCategory = cat.PK_mscPHICCategory  order by a.docno asc");
 
         $curr = PO::orderBy('created_at', 'desc')->get();
+        $POTransaction = Transaction::all();
 
         if (count($curr) >= 1) {
             if (count($data) == count($curr)) {
                 return response()->json(
                     [
                         'data' => $curr,
+                        'trans' => $POTransaction,
                     ],
                     200
                 );
@@ -146,7 +148,8 @@ FROM    dbo.iwPOinv AS a INNER JOIN
                     return response()->json(
                         [
                             'data' => $curr,
-                            'refresh' => 1
+                            'refresh' => 1,
+                            'trans' => $POTransaction,
                         ],
                         200
                     );
