@@ -29,4 +29,37 @@ class TransactionController extends Controller
             200
         );
     }
+
+    public function SetStatus(Request $request)
+    {
+        $id = $request->id;
+        $typeofaction = $request->typeofaction;
+        $data = Transaction::where('FK_PoID', $id);
+
+        switch ($typeofaction) {
+            case 'cancel':
+                $data->update([
+                    'status' => 3
+                ]);
+                break;
+            case 'undeliver':
+                $data->update([
+                    'status' => 1
+                ]);
+                break;
+            case 'extend':
+                $data->update([
+                    'status' => 5
+                ]);
+                break;
+            case 'deliver':
+                $data->update([
+                    'status' => 2
+                ]);
+                break;
+            case 'remarks':
+
+                break;
+        }
+    }
 }
