@@ -60,6 +60,26 @@ class TransactionController extends Controller
             case 'remarks':
 
                 break;
+
+            case 'Updateall':
+                $selection = $request->selection;
+                $selected  = $request->selected;
+                foreach ($selection as $key => $value) {
+                    $selId  = $value->id;
+
+                    switch ($selected) {
+                        case 'cancel':
+                            # code...
+                            break;
+                    }
+
+                    //    Transaction::where('FK_PoID',$selId)->update([
+
+                    //    ]);
+
+                }
+
+                break;
         }
     }
 }
