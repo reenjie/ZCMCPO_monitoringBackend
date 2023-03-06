@@ -35,6 +35,7 @@ class TransactionController extends Controller
         $id = $request->id;
         $typeofaction = $request->typeofaction;
         $data = Transaction::where('FK_PoID', $id);
+        $datenow = date('Y-m-d');
 
         switch ($typeofaction) {
             case 'cancel':
@@ -48,13 +49,16 @@ class TransactionController extends Controller
                 ]);
                 break;
             case 'extend':
+                $addedcount = $data->extendedCount + 1;
                 $data->update([
-                    'status' => 5
+                    'extendedCount' => $addedcount
                 ]);
                 break;
             case 'deliver':
                 $data->update([
-                    'status' => 2
+                    'status' => 2,
+                    'delivered_date' => $datenow,
+
                 ]);
                 break;
             case 'remarks':
@@ -81,5 +85,14 @@ class TransactionController extends Controller
 
                 break;
         }
+    }
+
+    public function setEmailedDate(Request $request)
+    {
+        $emDate = $request->emDate;
+        $id     = $request->id;
+        Transaction::where('FK_PoID', $id)->update([
+            'emailed_date' => $emDate
+        ]);
     }
 }

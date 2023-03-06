@@ -35,4 +35,5 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::post('FetchRecent', 'TransactionController@FetchRecent');
     Route::post('FetchPOstatus', 'TransactionController@FetchPOstatus');
     Route::post('SetStatus', 'TransactionController@SetStatus');
+    Route::post('setEmaileddate', 'TransactionController@setEmailedDate');
 });

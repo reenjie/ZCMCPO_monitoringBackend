@@ -45,7 +45,7 @@ class UserController extends Controller
             if (Auth::attempt($credentials)) {
                 $accesstoken = hash('sha256', $plainTextToken = Str::random(40));
                 //Session Timer
-                $expires = date('Y-m-d H:i:s', strtotime('+2 hours'));
+                $expires = date('Y-m-d H:i:s', strtotime('+8 hours'));
 
                 $validate = Accesstoken::where('userID', Auth::user()->id);
                 if (count($validate->get()) >= 1) {
