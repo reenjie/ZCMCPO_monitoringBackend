@@ -40,7 +40,8 @@ class TransactionController extends Controller
         switch ($typeofaction) {
             case 'cancel':
                 $data->update([
-                    'status' => 3
+                    'status' => 3,
+                    'cancelled_date' => date('Y-m-d')
                 ]);
                 break;
             case 'undeliver':
@@ -49,15 +50,27 @@ class TransactionController extends Controller
                 ]);
                 break;
             case 'extend':
-                $addedcount = $data->extendedCount + 1;
+                $addedcount = $request->extendedCount + 1;
+
+                $terms = $request->terms;
+                $due   = $request->due;
+                if ($terms == "default") {
+                    $defterms = "15";
+                } else {
+                    $defterms = $terms;
+                }
+
+                $wterms = date('Y-m-d', strtotime($due . '+' . $defterms . ' days'));
                 $data->update([
-                    'extendedCount' => $addedcount
+                    'extendedCount' => $addedcount,
+                    'duration_date' => $wterms
                 ]);
                 break;
             case 'deliver':
                 $data->update([
                     'status' => 2,
                     'delivered_date' => $datenow,
+
 
                 ]);
                 break;
@@ -91,8 +104,30 @@ class TransactionController extends Controller
     {
         $emDate = $request->emDate;
         $id     = $request->id;
+        $terms  = $request->terms;
+
+
+        if ($terms == "default") {
+            $defterms = "15";
+        } else {
+            $defterms = $terms;
+        }
+
+        $wterms = date('Y-m-d', strtotime($emDate . '+' . $defterms . ' days'));
+
+
         Transaction::where('FK_PoID', $id)->update([
-            'emailed_date' => $emDate
+            'emailed_date' => $emDate,
+            'DueDate' => $wterms
+        ]);
+    }
+
+    public function UndoAction(Request $request)
+    {
+        $id = $request->id;
+        Transaction::where('FK_PoID', $id)->update([
+            'delivered_date' => null,
+            'status' => 0
         ]);
     }
 }
