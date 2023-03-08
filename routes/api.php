@@ -37,4 +37,7 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::post('SetStatus', 'TransactionController@SetStatus');
     Route::post('setEmaileddate', 'TransactionController@setEmailedDate');
     Route::post('UndoAction', 'TransactionController@UndoAction');
+    Route::post('UpdateDue', 'TransactionController@UpdateDue');
+    Route::post('SetDeliveredDate', 'TransactionController@SetDeliveredDate');
+    Route::post('Applytoall', 'TransactionController@Applytoall');
 });
