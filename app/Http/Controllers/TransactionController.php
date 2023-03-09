@@ -100,12 +100,14 @@ class TransactionController extends Controller
         if ($untype == "delivered") {
             Transaction::where('FK_PoID', $id)->update([
                 'delivered_date' => null,
+                'completed_date' => null,
                 'status' => 0,
                 'remarks' => null
             ]);
         } else {
             Transaction::where('FK_PoID', $id)->update([
                 'cancelled_date' => null,
+                'completed_date' => null,
                 'status' => 0,
                 'remarks' => null
             ]);
@@ -135,20 +137,178 @@ class TransactionController extends Controller
 
     public function Applytoall(Request $request)
     {
-        $emaildate = $request->emaildate;
+        $data = $request->data;
         $selection = $request->selection;
-
+        $ttype = $request->ttype;
         foreach ($selection as $key => $value) {
             $id =  $value['id'];
-            $terms = $value['data'][0]['Terms'];
+            $check = Transaction::where('FK_PoID', $id)->get();
+            switch ($ttype) {
+                case 'saveemail':
+                    $terms = $value['data'][0]['Terms'];
+                    if (preg_match('/(\d+)/', $terms, $matches)) {
+                        $number = $matches[1];
+                        $wterms = date('Y-m-d', strtotime($data . '+' . $number . ' days'));
+                        if (count($check) >= 1) {
+                            if (!$check[0]->emailed_date) {
+                                Transaction::where('FK_PoID', $id)->update([
+                                    'emailed_date' => $data,
+                                    'DueDate' => $wterms
+                                ]);
+                            }
+                        }
+                    } else {
+                        $wterms = date('Y-m-d', strtotime($data . '+15 days'));
+                        if (count($check) >= 1) {
+                            if (!$check[0]->emailed_date) {
+                                Transaction::where('FK_PoID', $id)->update([
+                                    'emailed_date' => $data,
+                                    'DueDate' => $wterms
+                                ]);
+                            }
+                        }
+                    }
+                    break;
+                case 'savedelivered':
+                    if ($check[0]->emailed_date) {
+                        if (!$check[0]->delivered_date) {
+                            if (!$check[0]->cancelled_date) {
+                                Transaction::where('FK_PoID', $id)->update([
+                                    'status' => 2,
+                                    'delivered_date' => $data,
+                                    'remarks' => "Delivered"
+                                ]);
+                            }
+                        }
+                    }
+
+                    break;
+                case 'savecancelled':
 
 
-            if (preg_match('/(\d+)/', $terms, $matches)) {
-                $number = $matches[1];
-                echo $number;
-            } else {
-                echo 'by default : 15';
+                    if (!$check[0]->cancelled_date) {
+
+                        if (!$check[0]->delivered_date) {
+                            Transaction::where('FK_PoID', $id)->update([
+                                'status' => 3,
+                                'cancelled_date' => date('Y-m-d'),
+                                'remarks' => "Cancelled"
+                            ]);
+                        }
+                    }
+
+
+                    break;
+                case 'saveundelivered':
+
+                    if ($check[0]->emailed_date) {
+                        if (!$check[0]->cancelled_date) {
+                            if (!$check[0]->delivered_date) {
+                                Transaction::where('FK_PoID', $id)->update([
+                                    'status' => 1,
+                                    'remarks' => "Undelivered"
+                                ]);
+                            }
+                        }
+                    }
+
+
+                    break;
+                case "saveExtend":
+                    if ($check[0]->emailed_date) {
+                        $terms = $value['data'][0]['Terms'];
+                        $due   = $check[0]->DueDate;
+                        $extended = $check[0]->duration_date;
+                        $addedcount = $check[0]->extendedCount + 1;
+                        $datenow = date('Y-m-d');
+
+
+                        if (preg_match('/(\d+)/', $terms, $matches)) {
+                            $number = $matches[1];
+                            if (!$check[0]->duration_date) {
+                                $wterms = date('Y-m-d', strtotime($due . '+' . $number . ' days'));
+                            } else {
+                                $wterms = date('Y-m-d', strtotime($extended . '+' . $number . ' days'));
+                            }
+                        } else {
+                            if (!$check[0]->duration_date) {
+                                $wterms = date('Y-m-d', strtotime($due . '+15 days'));
+                            } else {
+                                $wterms = date('Y-m-d', strtotime($extended . '+15 days'));
+                            }
+                        }
+
+
+                        if (!$check[0]->duration_date) {
+                            //duedate
+                            if ($due < $datenow) {
+                                //expired
+                            } else {
+                                Transaction::where('FK_PoID', $id)->update([
+                                    'extendedCount' => $addedcount,
+                                    'duration_date' => $wterms
+                                ]);
+                            }
+                        } else {
+                            //durationdate
+                            if ($extended < $datenow) {
+                                //expired
+
+                            } else {
+                                Transaction::where('FK_PoID', $id)->update([
+                                    'extendedCount' => $addedcount,
+                                    'duration_date' => $wterms
+                                ]);
+                            }
+                        }
+                    }
+
+                    break;
+
+                case 'saveRemarks':
+
+                    Transaction::where('FK_PoID', $id)->update([
+                        'remarks' => $data
+                    ]);
+
+
+                    break;
+
+                case 'saveCompleted':
+                    if ($check[0]->emailed_date) {
+                        if ($check[0]->delivered_date) {
+                            Transaction::where('FK_PoID', $id)->update([
+                                'remarks' => "completed",
+                                'status'  => 4,
+                                'completed_date' => date('Y-m-d')
+                            ]);
+                        }
+                    }
+
+                    break;
+
+                case 'saveUndo':
+                    Transaction::where('FK_PoID', $id)->update([
+                        'cancelled_date' => null,
+                        'completed_date' => null,
+                        'delivered_date' => null,
+                        'status' => 0,
+                        'remarks' => null
+                    ]);
+                    break;
             }
         }
+    }
+
+    public function MarkComplete(Request $request)
+    {
+        $id = $request->id;
+        $datenow = date('Y-m-d');
+
+        Transaction::where('FK_PoID', $id)->update([
+            'status' => 4,
+            'completed_date' => $datenow,
+            'remarks' => 'Completed'
+        ]);
     }
 }

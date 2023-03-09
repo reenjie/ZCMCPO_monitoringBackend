@@ -40,4 +40,5 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::post('UpdateDue', 'TransactionController@UpdateDue');
     Route::post('SetDeliveredDate', 'TransactionController@SetDeliveredDate');
     Route::post('Applytoall', 'TransactionController@Applytoall');
+    Route::post('MarkComplete', 'TransactionController@MarkComplete');
 });
