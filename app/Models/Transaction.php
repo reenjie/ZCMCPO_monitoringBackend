@@ -19,7 +19,8 @@ class Transaction extends Model
         'completed_date',
         'cancelled_date',
         'DueDate',
-        'DueDate1',
+        'confirmation',
+        'confirmedby',
         'status',
         'remarks'
     ];

@@ -97,21 +97,26 @@ class TransactionController extends Controller
     {
         $id = $request->id;
         $untype = $request->untype;
-        if ($untype == "delivered") {
-            Transaction::where('FK_PoID', $id)->update([
-                'delivered_date' => null,
-                'completed_date' => null,
-                'status' => 0,
-                'remarks' => null
-            ]);
-        } else {
-            Transaction::where('FK_PoID', $id)->update([
-                'cancelled_date' => null,
-                'completed_date' => null,
-                'status' => 0,
-                'remarks' => null
-            ]);
-        }
+
+        Transaction::where('FK_PoID', $id)->update([
+            'confirmation' => 1,
+        ]);
+
+        // if ($untype == "delivered") {
+        //     Transaction::where('FK_PoID', $id)->update([
+        //         'delivered_date' => null,
+        //         'completed_date' => null,
+        //         'status' => 0,
+        //         'remarks' => null
+        //     ]);
+        // } else {
+        //     Transaction::where('FK_PoID', $id)->update([
+        //         'cancelled_date' => null,
+        //         'completed_date' => null,
+        //         'status' => 0,
+        //         'remarks' => null
+        //     ]);
+        // }
     }
 
     public function UpdateDue(Request $request)
@@ -244,10 +249,12 @@ class TransactionController extends Controller
                             if ($due < $datenow) {
                                 //expired
                             } else {
-                                Transaction::where('FK_PoID', $id)->update([
-                                    'extendedCount' => $addedcount,
-                                    'duration_date' => $wterms
-                                ]);
+                                if ($check[0]->delivered_date == null && $check[0]->cancelled_date == null && $check[0]->completed_date == null) {
+                                    Transaction::where('FK_PoID', $id)->update([
+                                        'extendedCount' => $addedcount,
+                                        'duration_date' => $wterms
+                                    ]);
+                                }
                             }
                         } else {
                             //durationdate
@@ -255,10 +262,12 @@ class TransactionController extends Controller
                                 //expired
 
                             } else {
-                                Transaction::where('FK_PoID', $id)->update([
-                                    'extendedCount' => $addedcount,
-                                    'duration_date' => $wterms
-                                ]);
+                                if ($check[0]->delivered_date == null && $check[0]->cancelled_date == null && $check[0]->completed_date == null) {
+                                    Transaction::where('FK_PoID', $id)->update([
+                                        'extendedCount' => $addedcount,
+                                        'duration_date' => $wterms
+                                    ]);
+                                }
                             }
                         }
                     }
@@ -288,12 +297,17 @@ class TransactionController extends Controller
                     break;
 
                 case 'saveUndo':
+                    // Transaction::where('FK_PoID', $id)->update([
+                    //     'cancelled_date' => null,
+                    //     'completed_date' => null,
+                    //     'delivered_date' => null,
+                    //     'status' => 0,
+                    //     'remarks' => null
+                    // ]);
+
+
                     Transaction::where('FK_PoID', $id)->update([
-                        'cancelled_date' => null,
-                        'completed_date' => null,
-                        'delivered_date' => null,
-                        'status' => 0,
-                        'remarks' => null
+                        'confirmation' => 1,
                     ]);
                     break;
             }

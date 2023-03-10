@@ -286,7 +286,8 @@ FROM    dbo.iwPOinv AS a INNER JOIN
                     'delivered_date' => null,
                     'completed_date' => null,
                     'DueDate' => null,
-                    'DueDate1' => null,
+                    'confirmation' => 0,
+                    'confirmedby' => 0,
                     'status' => 0,
                     'remarks' => null
                 ]);
