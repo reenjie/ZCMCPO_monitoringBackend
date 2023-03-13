@@ -214,7 +214,17 @@ FROM    dbo.iwPOinv AS a INNER JOIN
         $result   = [];
 
 
+        $emailed = '';
+        $delivered = '';
+        $completed = '';
+        $due = '';
+
+        $extended = false;
+
+
+
         foreach ($data as $key => $value) {
+
             switch ($value['labelled']) {
                 case 'Supplier':
                     $supplier = $value['value'];
@@ -225,8 +235,31 @@ FROM    dbo.iwPOinv AS a INNER JOIN
                 case 'Units':
                     $unit      = $value['value'];
                     break;
+                case 'Emailed Date':
+                    $emailed = $value['value'];
+                    break;
+                case 'Delivered Date':
+                    $delivered = $value['value'];
+                    break;
+                case 'Completed Date':
+                    $completed = $value['value'];
+                    break;
+                case 'Due Date':
+                    $due = $value['value'];
+                    break;
+
+                case 'Extension':
+                    $extended = true;
+                    break;
             }
         }
+
+        if ($extended) {
+            $result = DB::select(' SELECT * FROM `p_o_s` where PK_posID in (select FK_poID from transactions 
+            where extendedCount >=1 )');
+        }
+
+
 
         if ($supplier != '' && $category != '' && $unit != '') {
             $result = PO::where('category', $category)
@@ -251,8 +284,122 @@ FROM    dbo.iwPOinv AS a INNER JOIN
         } else if ($supplier == '' && $category == '' && $unit != '') {
             $result = PO::where('unit', $unit)->get();
         }
-        // echo $supplier . $category . $unit;
-        //$result = PO::where('supplier',)
+
+
+        if ($emailed != '' && $delivered != '' && $completed != '' && $due != '') {
+            //Check all
+            $result = DB::select('SELECT * FROM `p_o_s` where PK_posID in 
+            (select FK_poID from transactions 
+            where emailed_date ="' . $emailed . '"
+            and delivered_date = "' . $delivered . '"
+            and DueDate = "' . $due . '"
+            and completed_date = "' . $completed . '"
+            ) ');
+        } else if ($delivered != '' && $completed != '' && $due != '' && $emailed == '') {
+            // delivered,completed,due,
+
+            $result = DB::select('SELECT * FROM `p_o_s` where PK_posID in 
+            (select FK_poID from transactions 
+            where  delivered_date = "' . $delivered . '"
+            and DueDate = "' . $due . '"
+            and completed_date = "' . $completed . '"
+            ) ');
+        } else if ($completed != '' && $due != '' && $emailed != '' && $delivered == '') {
+            // completed,due,email,
+            $result = DB::select('SELECT * FROM `p_o_s` where PK_posID in 
+            (select FK_poID from transactions 
+            where emailed_date ="' . $emailed . '"
+            and DueDate = "' . $due . '"
+            and completed_date = "' . $completed . '"
+            ) ');
+        } else if ($due != '' && $emailed != '' && $delivered != '' && $completed == '') {
+            // due,email,delivered,
+
+            $result = DB::select('SELECT * FROM `p_o_s` where PK_posID in 
+            (select FK_poID from transactions 
+            where emailed_date ="' . $emailed . '"
+            and delivered_date = "' . $delivered . '"
+            and DueDate = "' . $due . '"
+            ) ');
+        } else if ($emailed != '' && $delivered != '' && $completed != '' && $due == '') {
+            // email,delivered,completed
+
+            $result = DB::select('SELECT * FROM `p_o_s` where PK_posID in 
+            (select FK_poID from transactions 
+            where emailed_date ="' . $emailed . '"
+            and delivered_date = "' . $delivered . '"
+            and completed_date = "' . $completed . '"
+            ) ');
+        } else if ($emailed != '' && $delivered != '' && $due == '' && $completed == '') {
+            //  email,delivered,
+
+            $result = DB::select('SELECT * FROM `p_o_s` where PK_posID in 
+            (select FK_poID from transactions 
+            where emailed_date ="' . $emailed . '"
+            and delivered_date = "' . $delivered . '"
+            ) ');
+        } else if ($completed != '' && $due != '' && $delivered == '' && $emailed == '') {
+            // completed,due,
+            $result = DB::select('SELECT * FROM `p_o_s` where PK_posID in 
+            (select FK_poID from transactions 
+            where DueDate = "' . $due . '"
+            and completed_date = "' . $completed . '"
+            ) ');
+        } else if ($delivered != '' && $completed != '' && $due == '' && $delivered == '') {
+            //delivered,completed,
+            $result = DB::select('SELECT * FROM `p_o_s` where PK_posID in 
+            (select FK_poID from transactions 
+            where delivered_date = "' . $delivered . '"
+            and completed_date = "' . $completed . '"
+            ) ');
+        } else if ($due != '' && $emailed != '' && $completed == '' && $delivered == '') {
+            //due,email,
+
+            $result = DB::select('SELECT * FROM `p_o_s` where PK_posID in 
+            (select FK_poID from transactions 
+            where emailed_date ="' . $emailed . '"
+            and DueDate = "' . $due . '"
+            ) ');
+        } else if ($delivered != '' && $due != '' && $completed == '' && $emailed == '') {
+            //delivered,due
+
+            $result = DB::select('SELECT * FROM `p_o_s` where PK_posID in 
+            (select FK_poID from transactions 
+            where delivered_date = "' . $delivered . '"
+            and DueDate = "' . $due . '"
+            ) ');
+        } else if ($emailed != '' && $completed != '' && $due == '' && $delivered == '') {
+            // email,completed,
+            $result = DB::select('SELECT * FROM `p_o_s` where PK_posID in 
+            (select FK_poID from transactions 
+            where emailed_date ="' . $emailed . '"
+            and completed_date = "' . $completed . '"
+            ) ');
+        } else if ($emailed != '' && $delivered == '' && $due == '' && $delivered == '') {
+            //emailed ,
+            $result = DB::select('SELECT * FROM `p_o_s` where PK_posID in 
+            (select FK_poID from transactions 
+            where emailed_date ="' . $emailed . '"
+            ) ');
+        } else if ($delivered != '' && $emailed == '' && $due == '' && $completed == '') {
+            // delivered,
+            $result = DB::select('SELECT * FROM `p_o_s` where PK_posID in 
+            (select FK_poID from transactions 
+            where  delivered_date = "' . $delivered . '"
+            ) ');
+        } else if ($completed != '' && $due == '' && $delivered == '' && $emailed == '') {
+            // completed,
+            $result = DB::select('SELECT * FROM `p_o_s` where PK_posID in 
+            (select FK_poID from transactions 
+            where completed_date = "' . $completed . '"
+            ) ');
+        } else if ($due != '' && $completed == '' && $delivered == '' && $emailed == '') {
+            // due
+            $result = DB::select('SELECT * FROM `p_o_s` where PK_posID in 
+            (select FK_poID from transactions 
+            where DueDate = "' . $due . '"   
+            ) ');
+        }
 
         return response()->json(
             [

@@ -325,4 +325,27 @@ class TransactionController extends Controller
             'remarks' => 'Completed'
         ]);
     }
+
+
+    public function cardCount()
+    {
+        $undelivered = DB::select('SELECT * FROM `p_o_s` where PK_posID in ( SELECT FK_PoID FROM `transactions` where status = 1 ) ');
+        $cancelled   = DB::select('SELECT * FROM `p_o_s` where PK_posID in (SELECT FK_PoID FROM `transactions` where cancelled_date is not null);');
+        $extended   = DB::select('SELECT * FROM `p_o_s` where PK_posID in (SELECT FK_PoID FROM `transactions` where extendedCount >=1 )');
+        $delivered   = DB::select('SELECT * FROM `p_o_s` where PK_posID in (SELECT FK_PoID FROM `transactions` where delivered_date is not null)');
+
+        $data = [
+            'undelivered' => $undelivered,
+            'cancelled'   => $cancelled,
+            'extended'    => $extended,
+            'delivered'   => $delivered
+        ];
+
+        return response()->json(
+            [
+                'data' => $data
+            ],
+            200
+        );
+    }
 }
