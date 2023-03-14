@@ -93,10 +93,13 @@ class UserController extends Controller
     public function fetchuser(Request $request)
     {
         $token = $request->token;
+        $role = $request->role;
+
+
         $datetime = date('Y-m-d H:i:s');
         //check first if user is authenticated
         $user = DB::select('SELECT u.*, r.roles FROM `users` u INNER JOIN roles r WHERE u.id in 
-        ( select userID from accesstokens where token ="' . $token . '" )');
+        ( select userID from accesstokens where token ="' . $token . '" and roleID=' . $role . ' )');
 
         if (count($user) >= 1) {
             $userID = $user[0]->id;

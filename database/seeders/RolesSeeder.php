@@ -17,7 +17,9 @@ class RolesSeeder extends Seeder
     {
         $fillroles = [
             'Admin',
-            'User'
+            'MMS_User',
+            'User',
+            'Supervisor'
         ];
         foreach ($fillroles as $items) {
             Roles::create([

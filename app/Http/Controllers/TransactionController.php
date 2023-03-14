@@ -348,4 +348,19 @@ class TransactionController extends Controller
             200
         );
     }
+
+    public function filterRecent(Request $request)
+    {
+        $data = $request->data;
+        $filteredDate = $data['filterDate'];
+
+        $allform = DB::select('SELECT * FROM `p_o_s` where PK_posID in ( select FK_PoID from transactions  where  DATE(updated_at) = "' . $filteredDate . '" ) ');
+
+        return response()->json(
+            [
+                'data' => $allform
+            ],
+            200
+        );
+    }
 }
