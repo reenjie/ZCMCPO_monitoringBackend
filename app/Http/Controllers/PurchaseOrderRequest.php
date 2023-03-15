@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\PO;
 use App\Models\Transaction;
+use App\Models\AuditLogs;
+
 
 class PurchaseOrderRequest extends Controller
 {
@@ -411,9 +413,15 @@ FROM    dbo.iwPOinv AS a INNER JOIN
 
     public function setviewed(Request $request)
     {
-        $selection = $request->selection;
+        $data = $request->data;
 
-        foreach ($selection as $row) {
+        $loguser = DB::select('select * from users where id  in (SELECT userID FROM `accesstokens` where token = "' . $request->token . '" )');
+        AuditLogs::create([
+            "username" => $loguser[0]->username,
+            "actiontype" => "Viewed Items : " . count($data['selection'])
+        ]);
+
+        foreach ($data['selection'] as $row) {
             $id = $row['id'];
             PO::where('PK_posID', $id)->update([
                 'newtag' => 0

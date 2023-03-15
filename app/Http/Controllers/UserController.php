@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Accesstoken;
+use App\Models\AuditLogs;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -63,6 +64,12 @@ class UserController extends Controller
                     ]);
                 }
 
+                AuditLogs::create([
+                    "username" => $request->username,
+                    "actiontype" => "login attempt : Success"
+                ]);
+
+
 
                 return response()->json(
                     [
@@ -73,6 +80,12 @@ class UserController extends Controller
                     200
                 );
             } else {
+
+                AuditLogs::create([
+                    "username" => $request->username,
+                    "actiontype" => "login attempt : Failed"
+                ]);
+
                 return response()->json(
                     [
                         'message' => 'Invalid Credentials',
@@ -135,6 +148,7 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
+        $loguser = DB::select('select * from users where id  in (SELECT userID FROM `accesstokens` where token = "' . $request->token . '" )');
         try {
             $save =  User::create([
                 'name' => $request->name,
@@ -145,6 +159,12 @@ class UserController extends Controller
             ]);
 
             if ($save) {
+
+                AuditLogs::create([
+                    "username" => $loguser[0]->username,
+                    "actiontype" => "Save new User : " . $request->name . ' | ' . $request->username
+                ]);
+
                 return response()->json(
                     [
                         'message' => 'success',
@@ -165,6 +185,8 @@ class UserController extends Controller
 
     public function update(Request $request)
     {
+
+        $loguser = DB::select('select * from users where id  in (SELECT userID FROM `accesstokens` where token = "' . $request->token . '" )');
         try {
             $id      = $request->id;
             $name    = $request->name;
@@ -183,6 +205,11 @@ class UserController extends Controller
                     'password' =>  Hash::make($pass)
                 ]);
             }
+
+            AuditLogs::create([
+                "username" => $loguser[0]->username,
+                "actiontype" => "Updated User : " . $request->name . ' | ' . $request->username
+            ]);
             return response()->json(
                 [
                     'message' => 'Updated Successfully!',
@@ -204,6 +231,12 @@ class UserController extends Controller
         try {
             $id = $request->id;
             User::findorFail($id)->delete();
+
+            $loguser = DB::select('select * from users where id  in (SELECT userID FROM `accesstokens` where token = "' . $request->token . '" )');
+            AuditLogs::create([
+                "username" => $loguser[0]->username,
+                "actiontype" => "Deleted User"
+            ]);
 
             return response()->json(
                 [
@@ -289,5 +322,34 @@ class UserController extends Controller
                 200
             );
         }
+    }
+
+    public function fetchlogs(Request $request)
+    {
+        $data = AuditLogs::orderByDesc('created_at')->get();
+
+        return response()->json(
+            [
+                'data' => $data,
+            ],
+            200
+        );
+    }
+
+    public function logout(Request $request)
+    {
+
+        $loguser = DB::select('select * from users where id  in (SELECT userID FROM `accesstokens` where token = "' . $request->token . '" )');
+        AuditLogs::create([
+            "username" => $loguser[0]->username,
+            "actiontype" => "Logout"
+        ]);
+
+        return response()->json(
+            [
+                'message' => 'logout',
+            ],
+            200
+        );
     }
 }

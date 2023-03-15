@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transaction;
+use App\Models\AuditLogs;
+use App\Models\PO;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -32,10 +34,14 @@ class TransactionController extends Controller
 
     public function SetStatus(Request $request)
     {
-        $id = $request->id;
-        $typeofaction = $request->typeofaction;
+        $data_ = $request->data;
+        $id = $data_['id'];
+        $typeofaction = $data_['typeofaction'];
         $data = Transaction::where('FK_PoID', $id);
         $datenow = date('Y-m-d');
+
+        $po = PO::where('PK_posID', $id)->get();
+        $action = '';
 
         switch ($typeofaction) {
             case 'cancel':
@@ -44,18 +50,21 @@ class TransactionController extends Controller
                     'cancelled_date' => date('Y-m-d'),
                     'remarks' => "Cancelled"
                 ]);
+                $action = "Items Marked Cancelled   | PO number : " . $po[0]->PONo . " && Item desc: " . $po[0]->itemdesc;
                 break;
             case 'undeliver':
                 $data->update([
                     'status' => 1,
                     'remarks' => "Undelivered"
                 ]);
+
+                $action = "Items Marked Undelivered  | PO number : " . $po[0]->PONo . " && Item desc: " . $po[0]->itemdesc;
                 break;
             case 'extend':
-                $addedcount = $request->extendedCount + 1;
+                $addedcount = $data_['extendedCount'] + 1;
 
-                $terms = $request->terms;
-                $due   = $request->due;
+                $terms = $data_['terms'];
+                $due   = $data_['due'];
                 if ($terms == "default") {
                     $defterms = "15";
                 } else {
@@ -67,16 +76,32 @@ class TransactionController extends Controller
                     'extendedCount' => $addedcount,
                     'duration_date' => $wterms
                 ]);
+
+                $action = "Items DueDate Extended | New DueDate: " . $wterms . "  | PO number : " . $po[0]->PONo . " && Item desc: " . $po[0]->itemdesc;
                 break;
         }
+
+        $loguser = DB::select('select * from users where id  in (SELECT userID FROM `accesstokens` where token = "' . $request->token . '" )');
+        AuditLogs::create([
+            "username" => $loguser[0]->username,
+            "actiontype" => $action
+        ]);
     }
 
     public function setEmailedDate(Request $request)
     {
-        $emDate = $request->emDate;
-        $id     = $request->id;
-        $terms  = $request->terms;
+        $data = $request->data;
+        $emDate = $data['emDate'];
+        $id     = $data['id'];
+        $terms  = $data['terms'];
 
+        $po = PO::where('PK_posID', $id)->get();
+
+        $loguser = DB::select('select * from users where id  in (SELECT userID FROM `accesstokens` where token = "' . $request->token . '" )');
+        AuditLogs::create([
+            "username" => $loguser[0]->username,
+            "actiontype" => "Set emailed date : " . $emDate . " &&  PO number : " . $po[0]->PONo . " && Item desc: " . $po[0]->itemdesc
+        ]);
 
         if ($terms == "default") {
             $defterms = "15";
@@ -95,11 +120,19 @@ class TransactionController extends Controller
 
     public function UndoAction(Request $request)
     {
-        $id = $request->id;
-        $untype = $request->untype;
+        $data = $request->data;
+        $id = $data['id'];
+        $untype = $data['untype'];
 
         Transaction::where('FK_PoID', $id)->update([
             'confirmation' => 1,
+        ]);
+
+        $po = PO::where('PK_posID', $id)->get();
+        $loguser = DB::select('select * from users where id  in (SELECT userID FROM `accesstokens` where token = "' . $request->token . '" )');
+        AuditLogs::create([
+            "username" => $loguser[0]->username,
+            "actiontype" => "Request Confirmation for Undoing Action || PO number : " . $po[0]->PONo . " && Item desc: " . $po[0]->itemdesc
         ]);
 
         // if ($untype == "delivered") {
@@ -121,30 +154,48 @@ class TransactionController extends Controller
 
     public function UpdateDue(Request $request)
     {
-        $id = $request->id;
-        $dates = $request->dates;
-        $entity = $request->entity;
+        $data = $request->data;
+        $id = $data['id'];
+        $dates = $data['dates'];
+        $entity = $data['entity'];
+        if ($entity == "remarks") {
+            $po = PO::where('PK_posID', $id)->get();
+            $loguser = DB::select('select * from users where id  in (SELECT userID FROM `accesstokens` where token = "' . $request->token . '" )');
+            AuditLogs::create([
+                "username" => $loguser[0]->username,
+                "actiontype" => "Added Remarks : " . $dates . " : PO number : " . $po[0]->PONo . " && Item desc: " . $po[0]->itemdesc
+            ]);
+        }
         DB::select('UPDATE `transactions` SET  `' . $entity . '`= "' . $dates . '" WHERE `FK_PoID` = ' . $id . ' ');
     }
 
     public function SetDeliveredDate(Request $request)
     {
-        $id = $request->id;
-        $em = $request->em;
-        $datenow = date('Y-m-d');
+        $data = $request->data;
+        $id = $data['id'];
+        $em = $data['em'];
+
+        $po = PO::where('PK_posID', $id)->get();
+        $loguser = DB::select('select * from users where id  in (SELECT userID FROM `accesstokens` where token = "' . $request->token . '" )');
+        AuditLogs::create([
+            "username" => $loguser[0]->username,
+            "actiontype" => "Mark as Delivered | Date : " . $em . " : PO number : " . $po[0]->PONo . " && Item desc: " . $po[0]->itemdesc
+        ]);
 
         Transaction::where('FK_PoID', $id)->update([
             'status' => 2,
-            'delivered_date' => $datenow,
+            'delivered_date' => $em,
             'remarks' => "Delivered"
         ]);
     }
 
     public function Applytoall(Request $request)
     {
-        $data = $request->data;
-        $selection = $request->selection;
-        $ttype = $request->ttype;
+        $item = $request->data;
+        $data = $item['data'];
+        $selection = $item['selection'];
+        $ttype = $item['ttype'];
+        $loguser = DB::select('select * from users where id  in (SELECT userID FROM `accesstokens` where token = "' . $request->token . '" )');
         foreach ($selection as $key => $value) {
             $id =  $value['id'];
             $check = Transaction::where('FK_PoID', $id)->get();
@@ -173,6 +224,12 @@ class TransactionController extends Controller
                             }
                         }
                     }
+
+                    $po = PO::where('PK_posID', $id)->get();
+                    AuditLogs::create([
+                        "username" => $loguser[0]->username,
+                        "actiontype" => "Set emailed date : " . $data . " &&  PO number : " . $po[0]->PONo . " && Item desc: " . $po[0]->itemdesc
+                    ]);
                     break;
                 case 'savedelivered':
                     if ($check[0]->emailed_date) {
@@ -186,6 +243,11 @@ class TransactionController extends Controller
                             }
                         }
                     }
+                    $po = PO::where('PK_posID', $id)->get();
+                    AuditLogs::create([
+                        "username" => $loguser[0]->username,
+                        "actiontype" =>   "Mark as Delivered | Date : " . $data . " : PO number : " . $po[0]->PONo . " && Item desc: " . $po[0]->itemdesc
+                    ]);
 
                     break;
                 case 'savecancelled':
@@ -201,7 +263,11 @@ class TransactionController extends Controller
                             ]);
                         }
                     }
-
+                    $po = PO::where('PK_posID', $id)->get();
+                    AuditLogs::create([
+                        "username" => $loguser[0]->username,
+                        "actiontype" => "Items Marked Cancelled   | PO number : " . $po[0]->PONo . " && Item desc: " . $po[0]->itemdesc
+                    ]);
 
                     break;
                 case 'saveundelivered':
@@ -217,6 +283,11 @@ class TransactionController extends Controller
                         }
                     }
 
+                    $po = PO::where('PK_posID', $id)->get();
+                    AuditLogs::create([
+                        "username" => $loguser[0]->username,
+                        "actiontype" => "Items Marked Undelivered  | PO number : " . $po[0]->PONo . " && Item desc: " . $po[0]->itemdesc
+                    ]);
 
                     break;
                 case "saveExtend":
@@ -255,6 +326,13 @@ class TransactionController extends Controller
                                         'duration_date' => $wterms
                                     ]);
                                 }
+
+
+                                $po = PO::where('PK_posID', $id)->get();
+                                AuditLogs::create([
+                                    "username" => $loguser[0]->username,
+                                    "actiontype" => "Items DueDate Extended | New DueDate: " . $wterms . "  | PO number : " . $po[0]->PONo . " && Item desc: " . $po[0]->itemdesc
+                                ]);
                             }
                         } else {
                             //durationdate
@@ -266,6 +344,12 @@ class TransactionController extends Controller
                                     Transaction::where('FK_PoID', $id)->update([
                                         'extendedCount' => $addedcount,
                                         'duration_date' => $wterms
+                                    ]);
+
+                                    $po = PO::where('PK_posID', $id)->get();
+                                    AuditLogs::create([
+                                        "username" => $loguser[0]->username,
+                                        "actiontype" => "Items DueDate Extended | New DueDate: " . $wterms . "  | PO number : " . $po[0]->PONo . " && Item desc: " . $po[0]->itemdesc
                                     ]);
                                 }
                             }
@@ -280,7 +364,11 @@ class TransactionController extends Controller
                         'remarks' => $data
                     ]);
 
-
+                    $po = PO::where('PK_posID', $id)->get();
+                    AuditLogs::create([
+                        "username" => $loguser[0]->username,
+                        "actiontype" => "Added Remarks : " . $data . " : PO number : " . $po[0]->PONo . " && Item desc: " . $po[0]->itemdesc
+                    ]);
                     break;
 
                 case 'saveCompleted':
@@ -290,6 +378,12 @@ class TransactionController extends Controller
                                 'remarks' => "completed",
                                 'status'  => 4,
                                 'completed_date' => date('Y-m-d')
+                            ]);
+
+                            $po = PO::where('PK_posID', $id)->get();
+                            AuditLogs::create([
+                                "username" => $loguser[0]->username,
+                                "actiontype" => "Mark as Completed | Date : " . date('Y-m-d') . " : PO number : " . $po[0]->PONo . " && Item desc: " . $po[0]->itemdesc
                             ]);
                         }
                     }
@@ -304,11 +398,18 @@ class TransactionController extends Controller
                     //     'status' => 0,
                     //     'remarks' => null
                     // ]);
+                    if ($check[0]->delivered_date != null || $check[0]->cancelled_date != null) {
+                        Transaction::where('FK_PoID', $id)->update([
+                            'confirmation' => 1,
+                        ]);
+                        $po = PO::where('PK_posID', $id)->get();
+                        $loguser = DB::select('select * from users where id  in (SELECT userID FROM `accesstokens` where token = "' . $request->token . '" )');
+                        AuditLogs::create([
+                            "username" => $loguser[0]->username,
+                            "actiontype" => "Request Confirmation for Undoing Action || PO number : " . $po[0]->PONo . " && Item desc: " . $po[0]->itemdesc
+                        ]);
+                    }
 
-
-                    Transaction::where('FK_PoID', $id)->update([
-                        'confirmation' => 1,
-                    ]);
                     break;
             }
         }
@@ -316,8 +417,16 @@ class TransactionController extends Controller
 
     public function MarkComplete(Request $request)
     {
-        $id = $request->id;
+        $data = $request->data;
+        $id = $data['id'];
         $datenow = date('Y-m-d');
+
+        $po = PO::where('PK_posID', $id)->get();
+        $loguser = DB::select('select * from users where id  in (SELECT userID FROM `accesstokens` where token = "' . $request->token . '" )');
+        AuditLogs::create([
+            "username" => $loguser[0]->username,
+            "actiontype" => "Mark as Completed | Date : " . $datenow . " : PO number : " . $po[0]->PONo . " && Item desc: " . $po[0]->itemdesc
+        ]);
 
         Transaction::where('FK_PoID', $id)->update([
             'status' => 4,

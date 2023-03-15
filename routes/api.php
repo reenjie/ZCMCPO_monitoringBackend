@@ -43,4 +43,6 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::post('MarkComplete', 'TransactionController@MarkComplete');
     Route::post('cardCount', 'TransactionController@cardCount');
     Route::post('filterRecent', 'TransactionController@filterRecent');
+    Route::post('fetchlogs', 'UserController@fetchlogs');
+    Route::post('logoutUser', 'UserController@logout');
 });
