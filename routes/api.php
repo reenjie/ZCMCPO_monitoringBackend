@@ -45,4 +45,5 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::post('filterRecent', 'TransactionController@filterRecent');
     Route::post('fetchlogs', 'UserController@fetchlogs');
     Route::post('logoutUser', 'UserController@logout');
+    Route::post('fetchForapproval', 'TransactionController@fetchForapproval');
 });

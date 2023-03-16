@@ -472,4 +472,15 @@ class TransactionController extends Controller
             200
         );
     }
+
+    public function fetchForapproval(Request $request)
+    {
+        $data = DB::select('SELECT * FROM `p_o_s` where PK_posID in (select FK_PoID from transactions  where  confirmation = 1) ');
+        return response()->json(
+            [
+                'data' => $data
+            ],
+            200
+        );
+    }
 }
