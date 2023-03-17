@@ -441,6 +441,7 @@ FROM    dbo.iwPOinv AS a INNER JOIN
                     'delivered_date' => null,
                     'completed_date' => null,
                     'DueDate' => null,
+                    'requestby' => 0,
                     'confirmation' => 0,
                     'confirmedby' => 0,
                     'status' => 0,

@@ -124,15 +124,19 @@ class TransactionController extends Controller
         $id = $data['id'];
         $untype = $data['untype'];
 
-        Transaction::where('FK_PoID', $id)->update([
-            'confirmation' => 1,
-        ]);
 
         $po = PO::where('PK_posID', $id)->get();
         $loguser = DB::select('select * from users where id  in (SELECT userID FROM `accesstokens` where token = "' . $request->token . '" )');
         AuditLogs::create([
             "username" => $loguser[0]->username,
             "actiontype" => "Request Confirmation for Undoing Action || PO number : " . $po[0]->PONo . " && Item desc: " . $po[0]->itemdesc
+        ]);
+
+
+
+        Transaction::where('FK_PoID', $id)->update([
+            'confirmation' => 1,
+            'requestby' => $loguser[0]->username,
         ]);
 
         // if ($untype == "delivered") {
@@ -398,15 +402,16 @@ class TransactionController extends Controller
                     //     'status' => 0,
                     //     'remarks' => null
                     // ]);
+                    $po = PO::where('PK_posID', $id)->get();
+                    $loguser = DB::select('select * from users where id  in (SELECT userID FROM `accesstokens` where token = "' . $request->token . '" )');
+                    AuditLogs::create([
+                        "username" => $loguser[0]->username,
+                        "actiontype" => "Request Confirmation for Undoing Action || PO number : " . $po[0]->PONo . " && Item desc: " . $po[0]->itemdesc
+                    ]);
                     if ($check[0]->delivered_date != null || $check[0]->cancelled_date != null) {
                         Transaction::where('FK_PoID', $id)->update([
                             'confirmation' => 1,
-                        ]);
-                        $po = PO::where('PK_posID', $id)->get();
-                        $loguser = DB::select('select * from users where id  in (SELECT userID FROM `accesstokens` where token = "' . $request->token . '" )');
-                        AuditLogs::create([
-                            "username" => $loguser[0]->username,
-                            "actiontype" => "Request Confirmation for Undoing Action || PO number : " . $po[0]->PONo . " && Item desc: " . $po[0]->itemdesc
+                            'requestby' => $loguser[0]->username,
                         ]);
                     }
 
@@ -475,10 +480,14 @@ class TransactionController extends Controller
 
     public function fetchForapproval(Request $request)
     {
-        $data = DB::select('SELECT * FROM `p_o_s` where PK_posID in (select FK_PoID from transactions  where  confirmation = 1) ');
+        $data = DB::select('select t.requestby, p.PONo , p.itemdesc , p.PK_posID from transactions t INNER JOIN p_o_s p on t.FK_PoID = p.PK_posID where t.confirmation = 1 ');
+
+        $po = DB::select('SELECT * FROM `p_o_s` where PK_posID in ( select FK_PoID from transactions  where  confirmation = 1) ');
+
         return response()->json(
             [
-                'data' => $data
+                'data' => $data,
+                'po'   => $po
             ],
             200
         );

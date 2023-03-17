@@ -25,6 +25,7 @@ return new class extends Migration
             $table->date('cancelled_date')->nullable();
             $table->date('DueDate')->nullable();
             $table->integer('status')->comment('1 = undelivered , 2= delivered , 3=cancelled , 4=completed ');
+            $table->text('requestby')->comment('MMSUser username');
             $table->integer('confirmation')->comment('0 = default, 1=toconfirm, 2 = confirmed');
             $table->integer('confirmedby')->comment('Supervisor Account ID');
             $table->text('remarks')->nullable();
