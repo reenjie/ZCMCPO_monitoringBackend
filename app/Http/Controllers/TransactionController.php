@@ -492,4 +492,36 @@ class TransactionController extends Controller
             200
         );
     }
+
+    public function approvedUndo(Request $request)
+    {
+        $data = $request->data;
+        $id = $data['id'];
+
+
+        $po = PO::where('PK_posID', $id)->get();
+        $loguser = DB::select('select * from users where id  in (SELECT userID FROM `accesstokens` where token = "' . $request->token . '" )');
+        AuditLogs::create([
+            "username" => $loguser[0]->username,
+            "actiontype" => "Approved to Undo Action : PO number : " . $po[0]->PONo . " && Item desc: " . $po[0]->itemdesc
+        ]);
+
+
+        Transaction::where('FK_PoID', $id)->update([
+            'confirmation' => 0,
+            'cancelled_date' => null,
+            'completed_date' => null,
+            'delivered_date' => null,
+            'status' => 0,
+            'remarks' => null
+        ]);
+
+        return response()->json(
+            [
+                'message' => "Undone Successfully!",
+
+            ],
+            200
+        );
+    }
 }

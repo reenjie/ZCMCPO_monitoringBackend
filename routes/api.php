@@ -46,4 +46,5 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::post('fetchlogs', 'UserController@fetchlogs');
     Route::post('logoutUser', 'UserController@logout');
     Route::post('fetchForapproval', 'TransactionController@fetchForapproval');
+    Route::post('approvedUndo', 'TransactionController@approvedUndo');
 });
